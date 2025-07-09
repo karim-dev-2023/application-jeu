@@ -6,28 +6,71 @@ import {
   Animated,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-export default function AnimatedButton({ action, onPress }) {
+export default function AnimatedButton({ action, onPress, disabled = false }) {
   const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    if (disabled) return;
+
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 0.7,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 0.95,
+        duration: 300,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        if (onPress) onPress();
+      });
+    });
+  };
+
+  const isHigher = action === 'higher';
+  const gradientColors = isHigher
+    ? ['#56ab2f', '#a8e6cf']
+    : ['#ff416c', '#ff4757'];
 
   return (
     <TouchableWithoutFeedback
-      onPress={() => {
-        Animated.timing(opacity, {
-          toValue: 0.2,
-          duration: 800,
-          useNativeDriver: true,
-        }).start(() => onPress());
-      }}
+      onPress={handlePress}
+      disabled={disabled}
     >
       <Animated.View
         style={[
           styles.button,
-          action === 'higher' ? styles.buttonGreen : styles.buttonRed,
-          { opacity },
+          { opacity: disabled ? 0.5 : opacity, transform: [{ scale }] }
         ]}
       >
-        <Text style={styles.buttonText}>{action}</Text>
+        <LinearGradient
+          colors={gradientColors}
+          style={styles.buttonGradient}
+        >
+          <Text style={styles.icon}>
+            {isHigher ? '⬆️' : '⬇️'}
+          </Text>
+          <Text style={styles.buttonText}>
+            {isHigher ? 'Higher' : 'Lower'}
+          </Text>
+        </LinearGradient>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
@@ -35,22 +78,33 @@ export default function AnimatedButton({ action, onPress }) {
 
 const styles = StyleSheet.create({
   button: {
-    display: 'flex',
+    borderRadius: 25,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    marginHorizontal: 10,
+  },
+  buttonGradient: {
+    borderRadius: 25,
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+    minWidth: 120,
     alignItems: 'center',
-    justifyContent: 'space-around',
-    borderRadius: 15,
-    padding: 30,
-    marginVertical: 15,
+    justifyContent: 'center',
   },
-  buttonRed: {
-    backgroundColor: 'red',
-  },
-  buttonGreen: {
-    backgroundColor: 'green',
+  icon: {
+    fontSize: 24,
+    marginBottom: 5,
   },
   buttonText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 18,
+    fontWeight: 'bold',
     textTransform: 'capitalize',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });
